@@ -48,9 +48,9 @@ def train(args, io):
     # =================================== INIT MODEL ==========================================================
     summary_writer = SummaryWriter("pre_results/%s/tensorboard" % (args.exp_name))
 
-    #model = ImagePoint(args)   ## model change
+    model = ImagePoint(args)   ## model change
     #model = DepthPoint(args)
-    model = CLIP2Point(args)
+    #model = CLIP2Point(args)
     
     model = nn.DataParallel(model, device_ids=gpus, output_device=gpus[0])  # 多卡训练修改
     model = model.to(device)
@@ -99,12 +99,14 @@ def train(args, io):
        
         for (image, points, a, e, d) in tqdm(train_dataloader):
             optimizer.zero_grad()
-            image = image.to(device)
+            #print(image[0].shape)
+            #image = torch.cat(image,dim = 0)
+            image = image.to(device)  # b*10*3*224*224
             points = points.to(device)
-            a = a.unsqueeze(-1).to(device)
-            e = e.unsqueeze(-1).to(device)
-            d = d.unsqueeze(-1).to(device)
-            loss,image_loss,depth_loss = model(points, image,a,e,d)
+            # a = a.unsqueeze(-1).to(device)
+            # e = e.unsqueeze(-1).to(device)
+            # d = d.unsqueeze(-1).to(device)
+            loss = model(points, image)
             loss = torch.mean(loss)
             
             loss_sum += loss.item()
@@ -128,8 +130,8 @@ def train(args, io):
                 logits = point_feats @ val_prompt_feats.t()
 
                 # only for multi-views
-                logits = logits.reshape(b, args.views, -1)  # 10 view for each   e.g.32*10*55
-                logits = torch.sum(logits, dim=1)  # 10 views 相加
+                # logits = logits.reshape(b, args.views, -1)  # 10 view for each   e.g.32*10*55
+                # logits = torch.sum(logits, dim=1)  # 10 views 相加
 
                 probs = logits.softmax(dim=-1)
                 #print(probs.shape)
@@ -151,8 +153,8 @@ def train(args, io):
                 point_feats = model.module.infer(points)
                 #          32*512         512*40
                 logits = point_feats @ test_prompt_feats.t()
-                logits = logits.reshape(b, args.views, -1)
-                logits = torch.sum(logits, dim=1)
+                # logits = logits.reshape(b, args.views, -1)
+                # logits = torch.sum(logits, dim=1)
                 #print(logits.shape)
                 probs = logits.softmax(dim=-1)
                 index = torch.max(probs, dim=1).indices
@@ -198,15 +200,15 @@ def train(args, io):
 if __name__ == "__main__":
     # Training settings
     parser = argparse.ArgumentParser(description='Point Cloud Recognition')
-    parser.add_argument('--exp_name', type=str, default='vit32', metavar='N',
+    parser.add_argument('--exp_name', type=str, default='vit32-image-pointtransv1_multi', metavar='N',
                         help='Name of the experiment')
     parser.add_argument('--views', type=int, default=10)
-    parser.add_argument('--ckpt', type=str, default='./pre_results/vit32-image-pointtransv1/best_val.pth')
+    parser.add_argument('--ckpt', type=str, default='./pre_results/vit32-image-pointtransv1_multi/best_val.pth')
     parser.add_argument('--dim', type=int, default=0, choices=[0, 512], help='0 if the view angle is not learnable')
     parser.add_argument('--model', type=str, default='PointNet', metavar='N',
                         choices=['DGCNN', 'PointNet'],
                         help='Model to use, [pointnet, dgcnn]')
-    parser.add_argument('--batch_size', type=int, default=128, metavar='batch_size',
+    parser.add_argument('--batch_size', type=int, default=32, metavar='batch_size',
                         help='Size of batch)')
     parser.add_argument('--test_batch_size', type=int, default=32, metavar='batch_size',
                         help='Size of batch)')

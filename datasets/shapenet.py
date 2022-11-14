@@ -209,9 +209,17 @@ class ShapeNetRender(ShapeNet):
         
         name = sample['taxonomy_id'] + '_' + sample['model_id']
         rand_idx = random.randint(0, 9)
-        image = Image.open('./data/rendering/%s/%d.png' % (name, rand_idx))
-        image = self.norm(self.totensor(image))
-        return image, points, self.views_azim[rand_idx], self.views_elev[rand_idx], self.views_dist[rand_idx]
+        # image = Image.open('./data/rendering/%s/%d.png' % (name, rand_idx))
+        # image = self.norm(self.totensor(image))   #3*224*224
+        images = []
+        for i in range(0,10):
+            image = Image.open('./data/rendering/%s/%d.png' % (name, i))
+            image = self.norm(self.totensor(image))
+            images.append(image)
+        images = torch.stack(images,0)
+        #print(images.shape)
+      
+        return images, points, self.views_azim[rand_idx], self.views_elev[rand_idx], self.views_dist[rand_idx]
 
 
 def collate_fn(batch):

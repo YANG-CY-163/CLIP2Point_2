@@ -37,10 +37,13 @@ class ImagePoint(nn.Module):
     
     def forward(self, points, images):
         batch_size = points.shape[0]
-        
+        #print(images.squeeze(1).shape)
+        b, n, c, h, w = images.size()
+        images = images.reshape(b * n, c, h, w)
         image_feat = self.image_model(images.squeeze(1)).detach()
-        
-        point_feat = self.point_model(points) #    batch_size/4 * 512
+        image_feat = torch.sum(image_feat.reshape(b,n,-1),dim=1)
+        #print(image_feat.shape)
+        point_feat = self.point_model(points) #    batch_size/gpu_num  * 512
         
         loss = self.criterion(point_feat, image_feat)
         return loss

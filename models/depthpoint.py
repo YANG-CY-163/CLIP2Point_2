@@ -52,7 +52,8 @@ class DepthPoint(nn.Module):
         depths = self.depth_model(depths)  # multi-view
         
         #     obtain global
-        depth_feat = self.global_d(depths)
+        #depth_feat = self.global_d(depths)
+        depth_feat = torch.sum(depths.reshape(b,n,-1),dim=1)
         point_loss = self.criterion(depth_feat, point_feat)
         return point_loss
         #return point_loss + depth_loss / (self.weights ** 2) + torch.log(self.weights + 1), image_loss, depth_loss
