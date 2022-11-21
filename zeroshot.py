@@ -10,7 +10,7 @@ from render.render import Renderer
 from render.selector import Selector
 from torch.utils.data import DataLoader
 from tqdm import tqdm
-from utils import read_state_dict
+from utils import read_state_dict, read_state_dict_net
 
 #clip_model, _ = clip.load("ViT-B/32", device='cpu')
 clip_model = utils.load_clip("./ViT-B-32.pt", device='cpu')
@@ -33,7 +33,7 @@ def inference(args):
         #checkpoint = torch.load(args.ckpt)  
         #model.load_state_dict(torch.load(args.ckpt,map_location=device))
         #model.load_state_dict(checkpoint['net'])
-        model.load_state_dict(read_state_dict(args.ckpt))
+        model.load_state_dict(read_state_dict_net(args.ckpt))
     selector = Selector(args.views, 0).to(device)
     render = Renderer(points_per_pixel=1, points_radius=0.02).to(device)
     prompt_feats = prompts_feats.to(device)
